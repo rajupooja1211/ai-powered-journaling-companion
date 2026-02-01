@@ -5,10 +5,6 @@ dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/**
- * Create embedding vector using Gemini
- * Used for semantic search & pattern analysis
- */
 export async function createEmbedding(text) {
   if (!text || text.trim().length === 0) {
     throw new Error("Text is empty. Cannot generate embedding.");
@@ -23,7 +19,7 @@ export async function createEmbedding(text) {
 
     return result.embedding.values; // number[]
   } catch (error) {
-    console.error("❌ Gemini embedding error:", error);
+    console.error("Gemini embedding error:", error);
     throw new Error(`Failed to create embedding: ${error.message}`);
   }
 }

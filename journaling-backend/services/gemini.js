@@ -1,13 +1,8 @@
-// services/gemini.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { ALL_TAGS } from "../config/predefinedTags.js";
+import { ALL_TAGS, PREDEFINED_TAGS } from "../config/predefinedTags.js";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/**
- * Analyzes journal entry with Gemini
- * Returns: summary, keywords, tags, sentiment_score, cognitive_biases
- */
 export async function analyzeEntry({ mode, text }) {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -21,13 +16,14 @@ ${text}
 
 Provide a JSON response with:
 
-1. **summary**: 2-3 sentence summary of the entry
+1. **summary**: Write a 2-3 sentence summary using FIRST-PERSON ("I", "Me", "My"). 
+   - CRITICAL: Start the summary by referencing the primary Life Domain detected.
+   - Example: "Regarding my work, I felt a great sense of accomplishment today..." 
+   - Example: "In the context of my relationships, I had a difficult conversation but I feel proud of my boundaries."
 2. **keywords**: Array of 5-10 important keywords/phrases from the entry
-3. **tags**: Array of relevant tags from this list ONLY: ${ALL_TAGS.join(", ")}
-   - Select 3-8 most relevant tags
-   - Include emotion tags (anxiety, joy, gratitude, etc.)
-   - Include domain tags (work, relationships, health, etc.)
-   - Include cognitive pattern tags if detected (catastrophizing, all-or-nothing-thinking, etc.)
+3. **tags**: Select 3-8 tags from this list ONLY: ${ALL_TAGS.join(", ")}. 
+   - You MUST include at least one tag from DOMAINS: ${PREDEFINED_TAGS.DOMAINS.join(", ")}.
+
 
 4. **sentiment_score**: Float from -1.0 to +1.0
    - -1.0 = Severe distress/despair/crisis
@@ -71,17 +67,22 @@ COGNITIVE BIAS DETECTION PATTERNS:
 → Mirror: "You're labeling yourself. Can you separate what you did from who you are?"
 
 RULES:
+- Use "I" statements. Never say "The user" or "The author".
 - Only flag biases with CLEAR evidence (direct quotes)
 - Mirrors should be gentle and curious, never accusatory
 - Severity: mild (minor distortion), moderate (impacts mood), severe (harmful belief)
 - If no biases detected, return empty array
 - Return ONLY valid JSON, no markdown, no extra text
+- The summary must be generated directly from the transcript provided.
+- Focus heavily on the "Domain" so the Wiki component can group these entries logically.
+
 
 Example output:
 {
-  "summary": "User is feeling overwhelmed by work deadlines and doubting their abilities.",
+  "summary: "I’ve been feeling overwhelmed with deadlines — I’m not sure I can keep up.",
+
   "keywords": ["overwhelmed", "work stress", "deadlines", "self-doubt", "anxiety"],
-  "tags": ["anxiety", "work", "overwhelm", "catastrophizing", "self-criticism"],
+ "tags": ["work", "creativity", "breakthrough", "anxiety", "progress"],
   "sentiment_score": -0.45,
   "cognitive_biases": [
     {
@@ -120,12 +121,12 @@ Example output:
     return {
       summary: parsed.summary,
       keywords: parsed.keywords || [],
-      tags: parsed.tags,
+      tags: Array.isArray(parsed.tags) ? parsed.tags : [],
       sentiment_score: parsed.sentiment_score ?? 0,
       cognitive_biases: parsed.cognitive_biases || [],
     };
   } catch (error) {
-    console.error("❌ Gemini analysis error:", error);
+    console.error("Gemini analysis error:", error);
     throw new Error(`Gemini analysis failed: ${error.message}`);
   }
 }

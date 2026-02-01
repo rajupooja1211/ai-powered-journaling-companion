@@ -28,8 +28,13 @@ const MONTHS = [
   "Dec",
 ];
 
-export default function ThursdayCalendar({ userId, onClose, onWeekSelect }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export default function ThursdayCalendar({
+  userId,
+  onClose,
+  onWeekSelect,
+  initialDate,
+}) {
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
 
   const isThursday = (year, month, day) => {
     return new Date(year, month, day).getDay() === 4;
@@ -62,19 +67,11 @@ export default function ThursdayCalendar({ userId, onClose, onWeekSelect }) {
   };
 
   const handleThursdayClick = (day) => {
-    const monthName = MONTHS[currentDate.getMonth()];
-    const weekData = {
-      startDate: `${monthName} ${day - 3}`,
-      endDate: `${monthName} ${day + 3}`,
-      totalEntries: 5,
-      avgMood: 0.6,
-      topThemes: ["Work", "Self-Worth"],
-      themes: [
-        { name: "Work Stress", count: 8, trend: "increasing" },
-        { name: "Self-Worth", count: 5, trend: "stable" },
-      ],
-    };
-    onWeekSelect(weekData);
+    onWeekSelect({
+      day: day,
+      month: currentDate.getMonth(),
+      year: currentDate.getFullYear(),
+    });
   };
 
   return (

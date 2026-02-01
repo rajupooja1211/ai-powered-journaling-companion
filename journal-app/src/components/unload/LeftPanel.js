@@ -1,10 +1,9 @@
-// LeftPanel.jsx
+"use client";
 import { Box, Typography, Button } from "@mui/material";
 import MicIcon from "@mui/icons-material/Mic";
 import StopIcon from "@mui/icons-material/Stop";
 
 export default function LeftPanel({
-  name,
   isRecording,
   showEndOptions,
   loadingAnalysis,
@@ -12,6 +11,8 @@ export default function LeftPanel({
   detectedEmotion,
   handleStop,
   handleContinueTalking,
+  continueClicked,
+  isProcessingAI,
 }) {
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -52,11 +53,12 @@ export default function LeftPanel({
       doubtful: "🤔",
       disappointed: "😞",
       happy: "😊",
+      joy: "😊",
       excited: "😃",
       worried: "😟",
       neutral: "😌",
     };
-    return emojis[detectedEmotion] || "💭";
+    return emojis[detectedEmotion] || "😌";
   };
 
   return (
@@ -76,7 +78,10 @@ export default function LeftPanel({
         textAlign: "center",
       }}
     >
-      {!isRecording && !showEndOptions && !loadingAnalysis ? (
+      {!isRecording &&
+      !showEndOptions &&
+      !loadingAnalysis &&
+      !isProcessingAI ? (
         // Initial State
         <>
           <Typography
@@ -146,7 +151,7 @@ export default function LeftPanel({
           </Typography>
         </>
       ) : loadingAnalysis ? (
-        // Loading State
+        // Loading State (Initial Analysis)
         <>
           <Typography
             variant="h5"
@@ -168,7 +173,36 @@ export default function LeftPanel({
               fontStyle: "italic",
             }}
           >
-            Sit tight, we’re summarizing what you shared.
+            Sit tight, we're summarizing what you shared.
+          </Typography>
+        </>
+      ) : isProcessingAI ? (
+        // AI Processing State
+        <>
+          <Typography
+            variant="h5"
+            sx={{
+              fontFamily: "'Courier New', monospace",
+              fontWeight: 600,
+              color: "#4a4a4a",
+              mb: 2,
+            }}
+          >
+            ✨ AI is analyzing...
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontFamily: "'Courier New', monospace",
+              color: "#8a8a8a",
+              fontSize: "0.95rem",
+              fontStyle: "italic",
+              lineHeight: 1.7,
+              maxWidth: 320,
+            }}
+          >
+            We're identifying patterns, themes, and insights from your thoughts.
+            This helps you understand yourself better.
           </Typography>
         </>
       ) : isRecording ? (
@@ -274,7 +308,7 @@ export default function LeftPanel({
               mb: 3,
             }}
           >
-            Thanks, {name}
+            Thanks for opening up!
           </Typography>
           <Typography
             variant="body1"
@@ -304,29 +338,32 @@ export default function LeftPanel({
           >
             You were talking <strong>{getEmotionDisplay()}</strong>
           </Typography>
-          <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={handleContinueTalking}
-              sx={{
-                fontFamily: "'Courier New', monospace",
-                fontSize: "1.1rem",
-                fontWeight: 600,
-                textTransform: "none",
-                borderColor: "#8b7355",
-                color: "#8b7355",
-                px: 3,
-                py: 1.2,
-                borderRadius: "12px",
-                "&:hover": {
-                  backgroundColor: "#f3ece1",
-                  borderColor: "#6b5335",
-                },
-              }}
-            >
-              Keep Sharing
-            </Button>
-          </Box>
+
+          {!continueClicked && (
+            <Box sx={{ mt: 4, display: "flex", gap: 2 }}>
+              <Button
+                variant="outlined"
+                onClick={handleContinueTalking}
+                sx={{
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: "1.1rem",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  borderColor: "#8b7355",
+                  color: "#8b7355",
+                  px: 3,
+                  py: 1.2,
+                  borderRadius: "12px",
+                  "&:hover": {
+                    backgroundColor: "#f3ece1",
+                    borderColor: "#6b5335",
+                  },
+                }}
+              >
+                Keep Sharing
+              </Button>
+            </Box>
+          )}
         </>
       )}
     </Box>

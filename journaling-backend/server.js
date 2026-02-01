@@ -4,13 +4,14 @@ import dotenv from "dotenv";
 import { testConnection } from "./config/database.js";
 import usersRouter from "./routes/users.js";
 import entriesRouter from "./routes/entries.js";
-import dashboardRoutes from "./routes/dashboard.js";
+import analyticsRoutes from "./routes/analytics.js";
+import wikiRoutes from "./routes/wiki.js";
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
 app.use(cors()); // Allow frontend to connect
 app.use(express.json()); // Parse JSON request bodies
 
@@ -20,7 +21,8 @@ testConnection();
 // Routes
 app.use("/api/users", usersRouter);
 app.use("/entries", entriesRouter);
-app.use("/api/dashboard", dashboardRoutes);
+app.use("/analytics", analyticsRoutes);
+app.use("/wiki", wikiRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
@@ -38,6 +40,6 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
 });

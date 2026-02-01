@@ -1,5 +1,5 @@
 import { Box, Button } from "@mui/material";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 
 const buttonVariants = {
@@ -16,24 +16,26 @@ const buttonVariants = {
   }),
 };
 
-export default function FloatingActionPanel({ onNewEntry }) {
+export default function FloatingActionPanel({ onNewEntry, userId }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const effectiveUserId = userId || searchParams.get("userId");
 
   const buttons = [
     {
       label: "New Entry",
       onClick: onNewEntry,
-      variant: "contained",
     },
     {
-      label: "View Past Entries",
-      onClick: () => router.push("/entries"),
-      variant: "contained",
-    },
-    {
-      label: "Weekly Insights",
-      onClick: () => router.push("/dashboard"),
-      variant: "contained",
+      label: "Gallery",
+      onClick: () => {
+        if (effectiveUserId) {
+          router.push(`/gallery?userId=${effectiveUserId}`);
+        } else {
+          console.error("No userId available");
+        }
+      },
     },
   ];
 
@@ -42,11 +44,11 @@ export default function FloatingActionPanel({ onNewEntry }) {
       sx={{
         position: "fixed",
         top: "50%",
-        right: "-60px", // pushes the panel out of the container
+        right: "-110px",
         transform: "translateY(-50%)",
         display: "flex",
         flexDirection: "column",
-        gap: 2,
+        gap: 4,
         zIndex: 1300,
         pointerEvents: "auto",
       }}
@@ -60,29 +62,27 @@ export default function FloatingActionPanel({ onNewEntry }) {
           variants={buttonVariants}
         >
           <Button
-            fullWidth
-            variant={btn.variant}
+            // fullWidth
+            variant="filled"
             sx={{
               fontFamily: "'Courier New', monospace",
               fontSize: "1rem",
               fontWeight: 600,
               textTransform: "none",
-              backgroundColor:
-                btn.variant === "contained" ? "#8b7355" : undefined,
-              color: btn.variant === "contained" ? "#fff" : "#8b7355",
+              backgroundColor: "#8b7355",
+              color: "#fff",
               borderColor: "#8b7355",
               borderWidth: "2px",
               borderStyle: "solid",
               borderRadius: "12px",
-              px: 2,
+              px: 3,
               py: 1.5,
-              minWidth: "220px",
-              boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
+              width: "10rem",
+
               "&:hover": {
-                backgroundColor:
-                  btn.variant === "contained" ? "#6b5335" : "#f3ece1",
+                backgroundColor: "rgba(139, 115, 85, 0.08)",
                 borderColor: "#6b5335",
-                color: btn.variant === "contained" ? "#fff" : "#6b5335",
+                color: "#6b5335",
               },
             }}
             onClick={btn.onClick}
