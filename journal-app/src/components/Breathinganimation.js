@@ -2,10 +2,10 @@
 import { useState, useEffect } from "react";
 import { Box } from "@mui/material";
 
-export default function BreathingAnimation({
+export default function MentalHealthBreathing({
   visible = true,
-  duration = 6,
-  intensity = 0.8,
+  duration = 12, // Slow, meditative pace
+  intensity = 0.4, // Subtlety is key for focus
 }) {
   const [mounted, setMounted] = useState(false);
 
@@ -15,96 +15,97 @@ export default function BreathingAnimation({
 
   if (!visible || !mounted) return null;
 
-  const maxOpacity = intensity;
-  const minOpacity = intensity * 0.625;
+  const groundingMotion = {
+    "0%": {
+      transform: "translate(-15%, -50%) scale(1)",
+      filter: "blur(100px)",
+      opacity: 0.5,
+    },
+    "50%": {
+      transform: "translate(10%, -48%) scale(1.15)",
+      filter: "blur(80px)",
+      opacity: 0.8,
+    },
+    "100%": {
+      transform: "translate(-15%, -50%) scale(1)",
+      filter: "blur(100px)",
+      opacity: 0.5,
+    },
+  };
 
   return (
-    <>
-      {/* Primary Breathing Circle */}
+    <Box
+      sx={{
+        position: "fixed",
+        inset: 0,
+        zIndex: -1,
+        overflow: "hidden",
+        backgroundColor: "#F4F1EA", // Soft parchment/linen color
+        pointerEvents: "none",
+      }}
+    >
+      {/* Deep Sage Green - Represents Growth & Tranquility */}
       <Box
         sx={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "1200px",
-          height: "1200px",
+          position: "absolute",
+          top: "35%",
+          left: "20%",
+          width: "80vw",
+          height: "80vw",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(255, 182, 193, 0.6) 0%, rgba(255, 218, 185, 0.4) 30%, transparent 70%)",
-          animation: `breathe ${duration}s ease-in-out infinite`,
-          zIndex: 0,
-          pointerEvents: "none",
-          "@keyframes breathe": {
-            "0%, 100%": {
-              transform: "translate(-50%, -50%) scale(0.8)",
-              opacity: minOpacity,
-            },
-            "50%": {
-              transform: "translate(-50%, -50%) scale(1.2)",
-              opacity: maxOpacity,
-            },
-          },
+            "radial-gradient(circle, #2b6e25 0%, rgb(34, 65, 31) 70%)",
+          animation: `grounding ${duration}s ease-in-out infinite`,
+          mixBlendMode: "multiply",
+          "@keyframes grounding": groundingMotion,
         }}
       />
 
-      {/* Secondary Breathing Circle */}
+      {/* Muted Copper Orange - Represents Warmth & Emotional Safety */}
       <Box
         sx={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "900px",
-          height: "900px",
+          position: "absolute",
+          top: "55%",
+          left: "40%",
+          width: "85vw",
+          height: "85vw",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(221, 160, 221, 0.5) 0%, rgba(216, 191, 216, 0.3) 40%, transparent 70%)",
-          animation: `breathe-secondary ${duration}s ease-in-out infinite`,
-          animationDelay: "1s",
-          zIndex: 0,
-          pointerEvents: "none",
-          "@keyframes breathe-secondary": {
-            "0%, 100%": {
-              transform: "translate(-50%, -50%) scale(0.9)",
-              opacity: minOpacity * 0.8,
-            },
-            "50%": {
-              transform: "translate(-50%, -50%) scale(1.3)",
-              opacity: maxOpacity * 0.875,
-            },
-          },
+            "radial-gradient(circle, #bf6e4d 0%, rgba(198, 142, 119, 0) 70%)",
+          animation: `grounding ${duration * 1.2}s ease-in-out infinite`,
+          animationDelay: "-2s",
+          mixBlendMode: "multiply",
+          "@keyframes grounding": groundingMotion,
         }}
       />
 
-      {/* Inner Glow Circle */}
+      {/* Earthy Taupe Brown - Represents Stability & Grounding */}
       <Box
         sx={{
-          position: "fixed",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "600px",
-          height: "600px",
+          position: "absolute",
+          top: "45%",
+          left: "60%",
+          width: "70vw",
+          height: "70vw",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle, rgba(255, 228, 196, 0.7) 0%, rgba(250, 235, 215, 0.4) 50%, transparent 80%)",
-          animation: `breathe-glow ${duration}s ease-in-out infinite`,
-          animationDelay: "2s",
-          zIndex: 0,
-          pointerEvents: "none",
-          "@keyframes breathe-glow": {
-            "0%, 100%": {
-              transform: "translate(-50%, -50%) scale(0.7)",
-              opacity: minOpacity * 1.2,
-            },
-            "50%": {
-              transform: "translate(-50%, -50%) scale(1.4)",
-              opacity: maxOpacity * 1.125,
-            },
-          },
+            "radial-gradient(circle, #A89F91 0%, rgba(168, 159, 145, 0) 70%)",
+          animation: `grounding ${duration * 0.9}s ease-in-out infinite`,
+          animationDelay: "-5s",
+          mixBlendMode: "multiply",
+          "@keyframes grounding": groundingMotion,
         }}
       />
-    </>
+
+      {/* Soft Light Overlay to blend everything */}
+      <Box
+        sx={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(circle at center, transparent 0%, rgba(244, 241, 234, 0.4) 100%)",
+        }}
+      />
+    </Box>
   );
 }

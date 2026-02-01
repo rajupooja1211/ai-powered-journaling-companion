@@ -1,19 +1,133 @@
+// EntryScreen.jsx (Main Container)
 "use client";
-import { useState } from "react";
-import { Box, Typography, IconButton } from "@mui/material";
-import MicIcon from "@mui/icons-material/Mic";
+import { useState, useEffect, useRef } from "react";
+import { Box, IconButton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useRouter } from "next/navigation";
 import BreathingAnimation from "../Breathinganimation";
 import PageTransition from "../Pagetransition";
+import LeftPanel from "./LeftPanel";
+import RightPanel from "./RightPanel";
 
 export default function EntryScreen({ name, setStep }) {
   const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [transcript, setTranscript] = useState("");
+  const [keywords, setKeywords] = useState([]);
+  const [detectedEmotion, setDetectedEmotion] = useState(null);
+  const [cognitiveNudge, setCognitiveNudge] = useState(null);
+  const [showEndOptions, setShowEndOptions] = useState(false);
+  const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
-  const handleRelease = () => {
+  const silenceTimerRef = useRef(null);
+  const lastSpeechTimeRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isRecording) return;
+    recordingTimerRef.current = setInterval(() => {
+      setRecordingDuration((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(recordingTimerRef.current);
+  }, [isRecording]);
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const phrases = [
+      {
+        text: "The launch was a disaster",
+        delay: 3000,
+        keywords: ["Launch"],
+        emotion: "frustrated",
+      },
+      {
+        text: "Everything went wrong",
+        delay: 6000,
+        keywords: ["Self-Doubt"],
+        emotion: "angry",
+      },
+      {
+        text: "I'm not cut out for this",
+        delay: 9000,
+        keywords: ["Self-Doubt"],
+        emotion: "sad",
+      },
+      {
+        text: "I always mess up when stakes are high",
+        delay: 12000,
+        keywords: [],
+        emotion: "doubtful",
+      },
+      {
+        text: "The client email was a mess",
+        delay: 15000,
+        keywords: ["Client", "Email"],
+        emotion: "frustrated",
+      },
+      {
+        text: "The team didn't communicate well",
+        delay: 18000,
+        keywords: ["Team"],
+        emotion: "disappointed",
+      },
+    ];
+    phrases.forEach(({ text, delay, keywords: newKeywords, emotion }) => {
+      setTimeout(() => {
+        if (!isRecording) return;
+        lastSpeechTimeRef.current = Date.now();
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+        setTranscript((prev) => prev + " " + text + ".");
+        if (newKeywords.length > 0)
+          setKeywords((prev) => [...new Set([...prev, ...newKeywords])]);
+        if (emotion) setDetectedEmotion(emotion);
+        silenceTimerRef.current = setTimeout(() => {
+          if (isRecording) handleStop(true);
+        }, 120000);
+      }, delay);
+    });
+    return () => clearTimeout(silenceTimerRef.current);
+  }, [isRecording]);
+
+  const handleStop = (autoStopped = false) => {
     setIsRecording(false);
-    setStep("recording");
+    setLoadingAnalysis(true);
+    setShowEndOptions(false);
+    clearTimeout(silenceTimerRef.current);
+    clearInterval(recordingTimerRef.current);
+    setTimeout(() => {
+      if (transcript.includes("always")) {
+        setCognitiveNudge({
+          suggestion: `I noticed you said "always." Sometimes when we're stressed, one difficult moment can feel permanent. Was this really every time, or just today?`,
+        });
+      } else if (transcript.includes("never")) {
+        setCognitiveNudge({
+          suggestion: `I noticed you said "never." When we're overwhelmed, it's easy to see things as absolute. Could there be exceptions?`,
+        });
+      } else if (transcript.includes("Everything")) {
+        setCognitiveNudge({
+          suggestion: `You mentioned "everything" went wrong. Sometimes our minds paint with a broad brush when we're stressed. What specifically happened?`,
+        });
+      }
+      setShowEndOptions(true);
+      setLoadingAnalysis(false);
+    }, 1000);
+  };
+
+  const handleContinueTalking = () => {
+    setIsRecording(true);
+    setShowEndOptions(false);
+    setLoadingAnalysis(false);
+    setShowOptions(false);
+    lastSpeechTimeRef.current = Date.now();
+  };
+
+  const handleShowMenu = () => setShowOptions(true);
+  const handleNewEntry = () => {
+    setShowOptions(false);
+    // Optionally clear transcript/keywords
+    window.location.reload(); // Or reset transcript state
   };
 
   return (
@@ -29,8 +143,7 @@ export default function EntryScreen({ name, setStep }) {
           p: 2,
         }}
       >
-        <BreathingAnimation duration={7} intensity={0.6} />
-
+        <BreathingAnimation duration={7} intensity={0.5} />
         <IconButton
           onClick={() => router.back()}
           sx={{
@@ -45,126 +158,37 @@ export default function EntryScreen({ name, setStep }) {
         >
           <ArrowBackIcon sx={{ color: "#8b7355" }} />
         </IconButton>
-
         <Box
           sx={{
-            maxWidth: 550,
-            width: "90%",
-            p: 6,
-            textAlign: "center",
-            background: "rgba(255, 254, 240, 0.95)",
-            backdropFilter: "blur(10px)",
-            borderRadius: "20px",
-            border: "2px solid #d4c5a9",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+            display: "flex",
+            width: "100%",
+            maxWidth: "1200px",
+            height: "75vh",
+            maxHeight: "700px",
+            gap: "20px",
             zIndex: 10,
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontFamily: "'Courier New', monospace",
-              fontWeight: 600,
-              color: "#4a4a4a",
-              mb: 2,
-            }}
-          >
-            Unload Your Mind
-          </Typography>
-
-          <Typography
-            variant="body1"
-            sx={{
-              fontFamily: "'Courier New', monospace",
-              color: "#6a6a6a",
-              fontSize: "1.1rem",
-              lineHeight: 1.8,
-              mb: 4,
-            }}
-          >
-            Sometimes you just need to let it all out. Press and hold the button
-            below, speak for up to 2 minutes, and release when you're done.
-          </Typography>
-
-          <Box
-            sx={{
-              width: "80px",
-              height: "2px",
-              background: "#d4c5a9",
-              margin: "0 auto 40px",
-            }}
+          <LeftPanel
+            name={name}
+            isRecording={isRecording}
+            showEndOptions={showEndOptions}
+            loadingAnalysis={loadingAnalysis}
+            recordingDuration={recordingDuration}
+            detectedEmotion={detectedEmotion}
+            handleStop={handleStop}
+            handleContinueTalking={handleContinueTalking}
           />
-
-          <Box
-            onMouseDown={() => setIsRecording(true)}
-            onMouseUp={handleRelease}
-            onTouchStart={() => setIsRecording(true)}
-            onTouchEnd={handleRelease}
-            sx={{
-              width: 160,
-              height: 160,
-              borderRadius: "50%",
-              background: isRecording
-                ? "linear-gradient(135deg, #d4a574, #c49464)"
-                : "linear-gradient(135deg, #8b7355, #7a6345)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              margin: "0 auto",
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              boxShadow: isRecording
-                ? "0 0 40px rgba(212, 165, 116, 0.6), 0 8px 30px rgba(0,0,0,0.3)"
-                : "0 8px 25px rgba(0,0,0,0.25)",
-              transform: isRecording ? "scale(1.1)" : "scale(1)",
-              "&:hover": {
-                transform: "scale(1.05)",
-                boxShadow: "0 10px 35px rgba(0,0,0,0.3)",
-              },
-            }}
-          >
-            <MicIcon
-              sx={{
-                fontSize: "4rem",
-                color: "#fff",
-                animation: isRecording
-                  ? "pulse 1.5s ease-in-out infinite"
-                  : "none",
-                "@keyframes pulse": {
-                  "0%, 100%": { opacity: 1 },
-                  "50%": { opacity: 0.6 },
-                },
-              }}
-            />
-          </Box>
-
-          <Typography
-            variant="body2"
-            sx={{
-              fontFamily: "'Courier New', monospace",
-              color: "#8a8a8a",
-              fontSize: "0.95rem",
-              mt: 3,
-              fontStyle: "italic",
-            }}
-          >
-            {isRecording
-              ? "Recording... Release when done"
-              : "Press & Hold to Speak"}
-          </Typography>
-
-          <Typography
-            variant="caption"
-            sx={{
-              fontFamily: "'Courier New', monospace",
-              color: "#aaa",
-              fontSize: "0.85rem",
-              display: "block",
-              mt: 1,
-            }}
-          >
-            Maximum 2 minutes
-          </Typography>
+          <RightPanel
+            isRecording={isRecording}
+            showEndOptions={showEndOptions}
+            transcript={transcript}
+            keywords={keywords}
+            cognitiveNudge={cognitiveNudge}
+            handleShowMenu={handleShowMenu}
+            showOptions={showOptions}
+            handleNewEntry={handleNewEntry}
+          />
         </Box>
       </Box>
     </PageTransition>

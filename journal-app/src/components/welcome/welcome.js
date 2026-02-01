@@ -46,12 +46,55 @@ const bookStyles = {
 
 export default function Welcome() {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
-  const handleContinue = () => {
-    if (!name.trim()) return setShowError(true);
-    router.push(`/adaptive?name=${encodeURIComponent(name)}`);
+  const handleContinue = async () => {
+    // Validation
+    if (!name.trim()) {
+      setErrorMessage("Please enter your name!");
+      setShowError(true);
+      return;
+    }
+    if (!email.trim()) {
+      setErrorMessage("Please enter your email!");
+      setShowError(true);
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setErrorMessage("Please enter a valid email!");
+      setShowError(true);
+      return;
+    }
+
+    try {
+      // Call backend API to create/get user
+      const response = await fetch("http://localhost:3001/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          full_name: name.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create user");
+      }
+
+      const data = await response.json();
+
+      // Navigate with userId instead of name/email
+      router.push(`/adaptive?userId=${data.user.user_id}`);
+    } catch (error) {
+      console.error("Error:", error);
+      setErrorMessage("Connection error. Please try again!");
+      setShowError(true);
+    }
   };
 
   return (
@@ -73,7 +116,7 @@ export default function Welcome() {
         sx={{
           display: "flex",
           width: "100%",
-          maxWidth: "1100px",
+          maxWidth: "1200px",
           height: "85vh",
           maxHeight: "800px",
           gap: "25px",
@@ -125,7 +168,6 @@ export default function Welcome() {
             flexDirection: "column",
             justifyContent: "center",
             alignItems: "center",
-
             p: 5,
             "&:hover": { transform: "perspective(1500px) rotateY(-5deg)" },
           }}
@@ -172,6 +214,52 @@ export default function Welcome() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               error={showError && !name.trim()}
+              sx={{
+                mb: 3,
+                "& .MuiInputBase-root": {
+                  backgroundColor: "transparent",
+                },
+                "& .MuiInputBase-input": {
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: "1.4rem",
+                  fontWeight: 600,
+                  color: "#4a4a4a",
+                },
+                "& label": {
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: "1.2rem",
+                  fontWeight: 700,
+                  color: "#7a7a7a",
+                },
+                "& label.Mui-focused": { color: "#4a4a4a" },
+                "& label.Mui-error": { color: "#d32f2f" },
+                "& .MuiInput-underline:after": {
+                  borderBottomColor: "#8b7355",
+                  borderBottomWidth: "2px",
+                },
+                "& .MuiInput-underline:before": {
+                  borderBottomColor: "#d4c5a9",
+                },
+                "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
+                  borderBottomColor: "#a89878",
+                },
+                "& .MuiInput-underline.Mui-error:after": {
+                  borderBottomColor: "#d32f2f",
+                },
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="Enter your email"
+              variant="standard"
+              required
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={
+                showError && (!email.trim() || !/\S+@\S+\.\S+/.test(email))
+              }
               sx={{
                 mb: 4,
                 "& .MuiInputBase-root": {
@@ -259,7 +347,7 @@ export default function Welcome() {
             backgroundColor: "#8b7355",
           }}
         >
-          Please enter your name!
+          {errorMessage}
         </Alert>
       </Snackbar>
     </Box>
