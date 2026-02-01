@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { testConnection } from "./config/database.js";
 import usersRouter from "./routes/users.js";
 import entriesRouter from "./routes/entries.js";
-
+import dashboardRoutes from "./routes/dashboard.js";
 dotenv.config();
 
 const app = express();
@@ -20,6 +20,7 @@ testConnection();
 // Routes
 app.use("/api/users", usersRouter);
 app.use("/entries", entriesRouter);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

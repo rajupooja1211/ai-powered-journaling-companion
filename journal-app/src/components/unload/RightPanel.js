@@ -251,6 +251,7 @@ export default function RightPanel({
             fullWidth
             variant="contained"
             onClick={handleShowMenu}
+            disabled={!transcript.trim()}
             sx={{
               fontFamily: "'Courier New', monospace",
               fontSize: "1.1rem",

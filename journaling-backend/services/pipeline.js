@@ -1,49 +1,42 @@
-import {
-  analyzeSoftStart,
-  analyzePatternGallery,
-  analyzeUnload,
-} from "./gemini.js";
-
+// services/pipeline.js
+import { analyzeEntry } from "./gemini.js";
 import { createEmbedding } from "./embeddings.js";
 
 /**
  * Main AI pipeline
- * Orchestrates analysis + embeddings
+ * - Runs Gemini analysis (includes cognitive bias detection)
+ * - Creates semantic embedding
+ * - Returns flat, final result
  */
-export async function processJournalEntry({
-  mode,
-  text,
-  firstArrow = null,
-  secondArrow = null,
-}) {
+export async function processJournalEntry({ mode, text }) {
   if (!text || text.trim().length === 0) {
     throw new Error("Journal entry text is required.");
   }
 
-  let analysisResult;
-
   try {
-    // Step 1: Run Gemini analysis based on mode
-    if (mode === "soft_start") {
-      analysisResult = await analyzeSoftStart(text, firstArrow, secondArrow);
-    } else if (mode === "pattern_gallery") {
-      analysisResult = await analyzePatternGallery(text);
-    } else if (mode === "unload") {
-      analysisResult = await analyzeUnload(text);
-    } else {
-      throw new Error(`Unsupported mode: ${mode}`);
-    }
+    // Step 1: Gemini analysis (NOW includes cognitive_biases)
+    const {
+      summary,
+      keywords,
+      tags,
+      sentiment_score,
+      cognitive_biases, // ← NEW: Array of detected biases
+    } = await analyzeEntry({
+      mode,
+      text,
+    });
 
-    // Step 2: Create embedding (semantic memory)
+    // Step 2: Create embedding
     const embedding = await createEmbedding(text);
 
-    // Step 3: Return final processed object
+    // Step 3: Return final object (DB-ready)
     return {
-      mode,
-      raw_text: text,
-      analysis: analysisResult,
+      summary,
+      keywords,
+      tags,
+      sentiment_score,
+      cognitive_biases, // ← NEW: Pass biases to route handler
       embedding,
-      created_at: new Date().toISOString(),
     };
   } catch (error) {
     console.error("AI pipeline error:", error);
