@@ -1,147 +1,131 @@
+// services/gemini.js
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
-
-dotenv.config();
+import { ALL_TAGS } from "../config/predefinedTags.js";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * Analyze journal entry for Soft Start mode
- * Separates First Arrow (facts) from Second Arrow (interpretations)
+ * Analyzes journal entry with Gemini
+ * Returns: summary, keywords, tags, sentiment_score, cognitive_biases
  */
-export async function analyzeSoftStart(
-  rawText,
-  firstArrow = null,
-  secondArrow = null,
-) {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+export async function analyzeEntry({ mode, text }) {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    const prompt = `You are a CBT-trained journaling AI therapist. Analyze this journal entry from Soft Start mode.
+  const prompt = `
+You are a compassionate AI therapist analyzing a journal entry.
 
-Entry: "${rawText}"
-${firstArrow ? `First Arrow (user provided): ${JSON.stringify(firstArrow)}` : ""}
-${secondArrow ? `Second Arrow (user provided): ${JSON.stringify(secondArrow)}` : ""}
+JOURNAL ENTRY:
+"""
+${text}
+"""
 
-Return ONLY a valid JSON object (no markdown, no backticks) with this structure:
+Provide a JSON response with:
+
+1. **summary**: 2-3 sentence summary of the entry
+2. **keywords**: Array of 5-10 important keywords/phrases from the entry
+3. **tags**: Array of relevant tags from this list ONLY: ${ALL_TAGS.join(", ")}
+   - Select 3-8 most relevant tags
+   - Include emotion tags (anxiety, joy, gratitude, etc.)
+   - Include domain tags (work, relationships, health, etc.)
+   - Include cognitive pattern tags if detected (catastrophizing, all-or-nothing-thinking, etc.)
+
+4. **sentiment_score**: Float from -1.0 to +1.0
+   - -1.0 = Severe distress/despair/crisis
+   - -0.5 = Moderate negativity/sadness
+   - 0.0 = Neutral/balanced
+   - +0.5 = Moderate positivity/gratitude
+   - +1.0 = High joy/breakthrough/excitement
+   
+5. **cognitive_biases**: Array of detected cognitive distortions. Each object:
+   {
+     "type": "catastrophizing" | "all-or-nothing-thinking" | "overgeneralization" | "should-statements" | "personalization" | "negative-prediction" | "mental-filter" | "labeling",
+     "quote": "Exact phrase from the entry that shows this bias",
+     "mirror": "A gentle, curious reframe question (non-judgmental)",
+     "severity": "mild" | "moderate" | "severe"
+   }
+
+COGNITIVE BIAS DETECTION PATTERNS:
+
+**Catastrophizing**: "This is the worst", "I can't handle this", "Everything is ruined", "It's a disaster"
+→ Mirror: "You're predicting a catastrophe. What's one way this could be manageable?"
+
+**All-or-nothing**: "I always fail", "I never get it right", "Everyone hates me", "Nothing works", "Everything is..."
+→ Mirror: "You used 'always/never/everyone'. Can you think of one exception?"
+
+**Overgeneralization**: One event → "This always happens", "I'm always like this"
+→ Mirror: "You're taking one situation and making it a pattern. Is this really always true?"
+
+**Should statements**: "I should be better", "I must do this", "I have to...", "I ought to..."
+→ Mirror: "You're putting pressure with 'should'. What if you said 'I want to' or 'I could'?"
+
+**Personalization**: "It's all my fault", "I'm the reason this failed", "I ruined everything"
+→ Mirror: "You're taking full responsibility. What other factors contributed to this?"
+
+**Negative prediction**: "I'll never succeed", "This will definitely fail", "I know it won't work", "There's no hope"
+→ Mirror: "You're predicting the future. What evidence suggests it could go differently?"
+
+**Mental filter**: Only focusing on negatives, ignoring positives
+→ Mirror: "You're focusing on what went wrong. What went right, even if small?"
+
+**Labeling**: "I'm a failure", "I'm worthless", "I'm broken", "I'm stupid"
+→ Mirror: "You're labeling yourself. Can you separate what you did from who you are?"
+
+RULES:
+- Only flag biases with CLEAR evidence (direct quotes)
+- Mirrors should be gentle and curious, never accusatory
+- Severity: mild (minor distortion), moderate (impacts mood), severe (harmful belief)
+- If no biases detected, return empty array
+- Return ONLY valid JSON, no markdown, no extra text
+
+Example output:
 {
-  "first_arrow_facts": ["fact1", "fact2"],
-  "second_arrow_narrative": ["interpretation1", "interpretation2"],
-  "detected_biases": ["bias1", "bias2"],
-  "primary_themes": ["theme1", "theme2"],
-  "sentiment_score": -0.8
+  "summary": "User is feeling overwhelmed by work deadlines and doubting their abilities.",
+  "keywords": ["overwhelmed", "work stress", "deadlines", "self-doubt", "anxiety"],
+  "tags": ["anxiety", "work", "overwhelm", "catastrophizing", "self-criticism"],
+  "sentiment_score": -0.45,
+  "cognitive_biases": [
+    {
+      "type": "catastrophizing",
+      "quote": "I'll never finish this project and I'll definitely get fired",
+      "mirror": "You're predicting a catastrophe. What's one small step you could take right now?",
+      "severity": "moderate"
+    },
+    {
+      "type": "all-or-nothing-thinking",
+      "quote": "I always mess everything up",
+      "mirror": "You used 'always'. Can you recall one time when you handled something well?",
+      "severity": "mild"
+    }
+  ]
 }
+`;
 
-Rules:
-- first_arrow_facts: Objective events that happened (no interpretations)
-- second_arrow_narrative: User's interpretations, judgments, emotional reactions
-- detected_biases: Identify cognitive biases from: Catastrophizing, Overgeneralization, Black-and-White Thinking, Mind Reading, Emotional Reasoning, Should Statements, Personalization, Fortune Telling
-- primary_themes: Categories like "work", "relationships", "self-worth", "health", "family", "money"
-- sentiment_score: Float from -1.0 (very negative) to 1.0 (very positive)
-- If user says "always" or "never", flag as Overgeneralization
-- Never give advice, only identify patterns`;
-
+  try {
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const responseText = result.response.text();
 
-    const cleanText = text
+    // Clean markdown code blocks if present
+    const cleanJson = responseText
       .replace(/```json\n?/g, "")
       .replace(/```\n?/g, "")
       .trim();
-    const analysis = JSON.parse(cleanText);
+
+    const parsed = JSON.parse(cleanJson);
+
+    // Validate response structure
+    if (!parsed.summary || !parsed.tags || !Array.isArray(parsed.tags)) {
+      throw new Error("Invalid response structure from Gemini");
+    }
 
     return {
-      ...analysis,
-      first_arrow_facts: firstArrow || analysis.first_arrow_facts,
-      second_arrow_narrative: secondArrow || analysis.second_arrow_narrative,
+      summary: parsed.summary,
+      keywords: parsed.keywords || [],
+      tags: parsed.tags,
+      sentiment_score: parsed.sentiment_score ?? 0,
+      cognitive_biases: parsed.cognitive_biases || [],
     };
   } catch (error) {
-    console.error("❌ Gemini Soft Start analysis error:", error);
-    throw new Error(`Failed to analyze soft start entry: ${error.message}`);
-  }
-}
-
-/**
- * Analyze journal entry for Pattern Gallery mode
- * Focus on themes, biases, sentiment (no first/second arrow)
- */
-export async function analyzePatternGallery(rawText) {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    const prompt = `You are a CBT-trained journaling AI therapist. Analyze this journal entry from Pattern Gallery mode.
-
-Entry: "${rawText}"
-
-Return ONLY a valid JSON object (no markdown, no backticks) with this structure:
-{
-  "detected_biases": ["bias1", "bias2"],
-  "primary_themes": ["theme1", "theme2"],
-  "sentiment_score": -0.5
-}
-
-Rules:
-- detected_biases: Identify cognitive biases from: Catastrophizing, Overgeneralization, Black-and-White Thinking, Mind Reading, Emotional Reasoning, Should Statements, Personalization, Fortune Telling
-- primary_themes: Categories like "work", "relationships", "self-worth", "health", "family", "money"
-- sentiment_score: Float from -1.0 (very negative) to 1.0 (very positive)`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    const cleanText = text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    const analysis = JSON.parse(cleanText);
-
-    return analysis;
-  } catch (error) {
-    console.error("❌ Gemini Pattern Gallery analysis error:", error);
-    throw new Error(
-      `Failed to analyze pattern gallery entry: ${error.message}`,
-    );
-  }
-}
-
-/**
- * Analyze journal entry for Unload mode
- * Extract keywords, detect biases, sentiment (no themes, no first/second arrow)
- */
-export async function analyzeUnload(rawText) {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    const prompt = `You are a CBT-trained journaling AI therapist. Analyze this voice transcript from Unload mode.
-
-Transcript: "${rawText}"
-
-Return ONLY a valid JSON object (no markdown, no backticks) with this structure:
-{
-  "keywords_extracted": ["keyword1", "keyword2", "keyword3"],
-  "detected_biases": ["bias1", "bias2"],
-  "sentiment_score": -0.7
-}
-
-Rules:
-- keywords_extracted: 5-8 key words or short phrases that capture the main topics (e.g., "deadline", "boss", "anxiety", "presentation")
-- detected_biases: Identify cognitive biases from: Catastrophizing, Overgeneralization, Black-and-White Thinking, Mind Reading, Emotional Reasoning, Should Statements, Personalization, Fortune Telling
-- sentiment_score: Float from -1.0 (very negative) to 1.0 (very positive)`;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    const cleanText = text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    const analysis = JSON.parse(cleanText);
-
-    return analysis;
-  } catch (error) {
-    console.error("❌ Gemini Unload analysis error:", error);
-    throw new Error(`Failed to analyze unload entry: ${error.message}`);
+    console.error("❌ Gemini analysis error:", error);
+    throw new Error(`Gemini analysis failed: ${error.message}`);
   }
 }

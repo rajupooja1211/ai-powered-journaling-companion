@@ -7,18 +7,17 @@ const router = express.Router();
 /**
  * Create a new journal entry
  */
+// routes/journal.js
 router.post("/", async (req, res) => {
   try {
     const {
       user_id,
       mode,
       text,
-      first_arrow = null,
-      second_arrow = null,
-      metadata = {},
+      started_at = null,
+      ended_at = null,
     } = req.body;
 
-    // Basic validation
     if (!user_id || !mode || !text) {
       return res.status(400).json({
         error: "Missing required fields",
@@ -26,68 +25,59 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Step 1: Run AI pipeline
-    const processed = await processJournalEntry({
-      mode,
-      text,
-      firstArrow: first_arrow,
-      secondArrow: second_arrow,
-    });
+    let duration_seconds = null;
+    if (started_at && ended_at) {
+      duration_seconds = Math.floor(
+        (new Date(ended_at) - new Date(started_at)) / 1000,
+      );
+    }
 
-    const analysis = processed.analysis;
-    const embedding = processed.embedding;
+    // Run AI pipeline WITH cognitive bias detection
+    const {
+      summary,
+      keywords,
+      tags,
+      sentiment_score,
+      cognitive_biases,
+      embedding,
+    } = await processJournalEntry({ mode, text });
+
     const vectorEmbedding = embedding ? `[${embedding.join(",")}]` : null;
 
-    // Step 2: Map AI output → DB columns
     const sql = `
-    INSERT INTO journal_entries (
+      INSERT INTO journal_entries (
         user_id,
         mode,
         raw_text,
-
-        first_arrow_facts,
-        second_arrow_narrative,
-        detected_biases,
+        summary,
+        keywords,
+        tags,
         sentiment_score,
-        primary_themes,
-        keywords_extracted,
-
-        sleep_hours,
-        caffeine_intake,
-        physical_activity,
-        time_of_day,
-
+        cognitive_biases,
         embedding,
-        is_processed
-    )
-    VALUES (
-        $1, $2, $3,
-        $4, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13,
-        $14,
-        TRUE
-    )
-    RETURNING *;
+        started_at,
+        ended_at,
+        duration_seconds
+      )
+      VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+      )
+      RETURNING *;
     `;
 
     const values = [
-      user_id, // $1
-      mode, // $2
-      text, // $3
-
-      analysis.first_arrow_facts || null, // $4
-      analysis.second_arrow_narrative || null, // $5
-      analysis.detected_biases || null, // $6
-      analysis.sentiment_score || null, // $7
-      analysis.primary_themes || null, // $8
-      analysis.keywords_extracted || null, // $9
-
-      metadata.sleep_hours || null, // $10
-      metadata.caffeine_intake || null, // $11
-      metadata.physical_activity || null, // $12
-      metadata.time_of_day || null, // $13
-
-      vectorEmbedding, // $14
+      user_id,
+      mode,
+      text,
+      summary,
+      keywords,
+      tags,
+      sentiment_score,
+      JSON.stringify(cognitive_biases), // Store as JSONB
+      vectorEmbedding,
+      started_at,
+      ended_at,
+      duration_seconds,
     ];
 
     const result = await pool.query(sql, values);
@@ -95,11 +85,15 @@ router.post("/", async (req, res) => {
     res.status(201).json({
       message: "Journal entry created successfully",
       entry: result.rows[0],
+      // Return biases to frontend for immediate display
+      mirrors: cognitive_biases.map((b) => ({
+        type: b.type,
+        mirror: b.mirror,
+        severity: b.severity,
+      })),
     });
   } catch (error) {
     console.error("❌ Error creating journal entry:", error);
-
-    // Save failure case (optional later)
     res.status(500).json({
       error: "Failed to create journal entry",
       message: error.message,
