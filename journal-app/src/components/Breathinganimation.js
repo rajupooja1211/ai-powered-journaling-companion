@@ -4,8 +4,8 @@ import { Box } from "@mui/material";
 
 export default function MentalHealthBreathing({
   visible = true,
-  duration = 12, // Slow, meditative pace
-  intensity = 0.4, // Subtlety is key for focus
+  duration = 12,
+  intensity = 0.4,
 }) {
   const [mounted, setMounted] = useState(false);
 

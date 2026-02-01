@@ -7,7 +7,7 @@ import BreathingAnimation from "../Breathinganimation";
 
 const cardData = [
   {
-    title: "Pattern Gallery",
+    title: "The Clarity Corner",
     color: "#8b7355",
     description:
       "Explore calming and reflective visual patterns to guide your thoughts.",
@@ -76,7 +76,7 @@ export default function AdaptiveCards() {
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [userName, setUserName] = useState(""); // ✅ ADD THIS
 
-  // ✅ ADD THIS: Fetch user details when component loads
+  //Fetch user details when component loads
   useEffect(() => {
     if (userId) {
       fetch(`http://localhost:3001/api/users/${userId}`)

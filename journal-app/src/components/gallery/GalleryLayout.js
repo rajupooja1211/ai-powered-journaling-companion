@@ -1,6 +1,7 @@
 "use client";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, IconButton } from "@mui/material";
 import { useRouter } from "next/navigation";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import BreathingAnimation from "../Breathinganimation";
 
@@ -37,17 +38,17 @@ const bookStyles = {
 const galleryCards = [
   {
     id: 1,
-    title: "Visualization",
-    emoji: "📊",
-    description: "Emotional heatmap & mood trends",
+    title: "Mood Journey",
+
+    description: "Track your emotional patterns over time",
     route: "/gallery/visualization",
     color: "#8b7355",
   },
   {
     id: 2,
-    title: "Personal Wiki",
-    emoji: "📚",
-    description: "Themes & recurring patterns",
+    title: "Journal Index",
+
+    description: "Browse entries by health, work, relationships & more",
     route: "/gallery/wiki",
     color: "#a89878",
   },
@@ -74,7 +75,20 @@ export default function GalleryLayout({ userId, userName }) {
       }}
     >
       <BreathingAnimation duration={8} intensity={0.6} />
-
+      <IconButton
+        onClick={() => router.back()}
+        sx={{
+          position: "fixed",
+          top: 20,
+          left: 20,
+          zIndex: 20,
+          backgroundColor: "rgba(255, 254, 240, 0.9)",
+          border: "2px solid #d4c5a9",
+          "&:hover": { backgroundColor: "#fffef0" },
+        }}
+      >
+        <ArrowBackIcon sx={{ color: "#8b7355" }} />
+      </IconButton>
       {/* Single Book Page */}
       <Box
         sx={{
@@ -87,14 +101,10 @@ export default function GalleryLayout({ userId, userName }) {
           zIndex: 10,
         }}
       >
-        {/* Left Margin Line */}
         <Box sx={bookStyles.margin} />
 
-        {/* Left Shadow */}
         <Box sx={bookStyles.shadow} />
 
-        {/* Content */}
-        {/* Content */}
         <Box
           sx={{
             position: "relative",
@@ -104,23 +114,22 @@ export default function GalleryLayout({ userId, userName }) {
             flexDirection: "column",
           }}
         >
-          {/* Heading - Top Left */}
           <Typography
             variant="h3"
             sx={{
               fontFamily: "'Courier New', monospace",
               fontWeight: 600,
               color: "#4a4a4a",
-              textAlign: "left", // ✅ CHANGED: Left aligned
+              textAlign: "left",
               mb: 4,
               fontSize: { xs: "2rem", md: "2.5rem" },
               textDecoration: "underline",
               textDecorationColor: "#d4c5a9",
               textUnderlineOffset: "12px",
-              ml: 2, // ✅ ADDED: Left margin
+              ml: 2,
             }}
           >
-            Pattern Gallery
+            Mood Journey
           </Typography>
 
           {/* Gallery Grid - Centered */}
@@ -133,7 +142,7 @@ export default function GalleryLayout({ userId, userName }) {
               },
               gap: 3,
               maxWidth: "600px",
-              margin: "auto", // ✅ CHANGED: Centers cards vertically and horizontally
+              margin: "auto",
             }}
           >
             {galleryCards.map((card) => (
@@ -165,16 +174,6 @@ export default function GalleryLayout({ userId, userName }) {
                   },
                 }}
               >
-                {/* Emoji Icon */}
-                <Typography
-                  sx={{
-                    fontSize: { xs: "4rem", md: "5rem" },
-                    mb: 2,
-                  }}
-                >
-                  {card.emoji}
-                </Typography>
-
                 {/* Title */}
                 <Typography
                   variant="h5"
@@ -203,7 +202,6 @@ export default function GalleryLayout({ userId, userName }) {
                   {card.description}
                 </Typography>
 
-                {/* Hover Indicator */}
                 <Box
                   sx={{
                     position: "absolute",

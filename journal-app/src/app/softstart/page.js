@@ -1,4 +1,4 @@
-import SoftStart from "@/components/softstart/softstart";
+import SoftStart from "@/components/softstart/index";
 
 const softstart = () => {
   return <SoftStart />;

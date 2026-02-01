@@ -7,12 +7,11 @@ dotenv.config();
 // Create PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  max: 20, // Maximum number of connections in the pool
+  max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 });
 
-// Log when connected
 pool.on("connect", () => {
   console.log("✅ Connected to PostgreSQL database");
 });
@@ -27,10 +26,7 @@ pool.on("error", (err) => {
 export async function testConnection() {
   try {
     const result = await pool.query("SELECT NOW()");
-    console.log(
-      "✅ Database connection test successful at:",
-      result.rows[0].now,
-    );
+    console.log("Database connection test successful at:", result.rows[0].now);
     return true;
   } catch (error) {
     console.error("❌ Database connection test failed:", error.message);

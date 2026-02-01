@@ -4,10 +4,6 @@ import { processJournalEntry } from "../services/pipeline.js";
 
 const router = express.Router();
 
-/**
- * Create a new journal entry
- */
-// routes/journal.js
 router.post("/", async (req, res) => {
   try {
     const {
@@ -93,7 +89,7 @@ router.post("/", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("❌ Error creating journal entry:", error);
+    console.error(" Error creating journal entry:", error);
     res.status(500).json({
       error: "Failed to create journal entry",
       message: error.message,

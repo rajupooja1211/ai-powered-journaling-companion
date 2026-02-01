@@ -1,4 +1,3 @@
-// services/pipeline.js
 import { analyzeEntry } from "./gemini.js";
 import { createEmbedding } from "./embeddings.js";
 
@@ -7,6 +6,7 @@ import { createEmbedding } from "./embeddings.js";
  * - Runs Gemini analysis (includes cognitive bias detection)
  * - Creates semantic embedding
  * - Returns flat, final result
+ *
  */
 export async function processJournalEntry({ mode, text }) {
   if (!text || text.trim().length === 0) {
@@ -15,6 +15,7 @@ export async function processJournalEntry({ mode, text }) {
 
   try {
     // Step 1: Gemini analysis (NOW includes cognitive_biases)
+
     const {
       summary,
       keywords,

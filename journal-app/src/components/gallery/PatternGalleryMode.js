@@ -13,10 +13,15 @@ export default function PatternGalleryMode() {
   // Fetch user info
   useEffect(() => {
     if (userId) {
-      fetch(`http://localhost:3001/api/users/${userId}`)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/${userId}`)
         .then((res) => res.json())
         .then((data) => {
-          setUserName(data.user.full_name);
+          console.log("User API response:", data);
+
+          // Handle different possible response structures
+          const fullName =
+            data?.user?.full_name || data?.full_name || data?.name || "Guest";
+          setUserName(fullName);
           setLoading(false);
         })
         .catch((error) => {
@@ -24,6 +29,10 @@ export default function PatternGalleryMode() {
           setUserName("Guest");
           setLoading(false);
         });
+    } else {
+      // No userId provided
+      setUserName("Guest");
+      setLoading(false);
     }
   }, [userId]);
 

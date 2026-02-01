@@ -1,237 +1,451 @@
 "use client";
-import { useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Box, Typography, IconButton, Tooltip, Chip } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import ThursdayCalendar from "../calendar/ThursdayCalendar";
+import { useState, useMemo, useEffect } from "react";
+import {
+  Box,
+  Typography,
+  Paper,
+  Chip,
+  IconButton,
+  Fade,
+  CircularProgress,
+} from "@mui/material";
+import { ArrowBack } from "@mui/icons-material";
 import BreathingAnimation from "../Breathinganimation";
 
-const bookStyles = {
-  page: {
-    position: "relative",
-    background: "#fffef0",
-    overflow: "auto",
-    border: "2px solid #d4c5a9",
-    boxShadow:
-      "0 8px 25px rgba(0,0,0,0.2), inset -20px 0 30px rgba(0,0,0,0.08)",
-    borderRadius: "12px",
-  },
-  margin: {
-    position: "absolute",
-    top: "5%",
-    bottom: "5%",
-    left: "50px",
-    width: "2px",
-    background: "rgba(220,160,160,0.5)",
-    pointerEvents: "none",
-  },
-  shadow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    height: "100%",
-    width: "60px",
-    background: "linear-gradient(to right, rgba(0,0,0,0.15), transparent)",
-    pointerEvents: "none",
-  },
-};
+// Domain tags for filtering
+const DOMAIN_TAGS = [
+  "work",
+  "relationships",
+  "family",
+  "friendships",
+  "romance",
+  "health",
+  "sleep",
+  "exercise",
+  "finances",
+  "creativity",
+  "self-care",
+  "social-life",
+];
 
-export default function WikiView() {
+export default function NaturalWikiView() {
   const searchParams = useSearchParams();
-  const userId = searchParams.get("userId");
   const router = useRouter();
+  const userId = searchParams.get("userId");
 
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [activeTag, setActiveTag] = useState(null);
+  const [domains, setDomains] = useState([]);
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleWeekSelect = (weekData) => {
-    setSelectedWeek(weekData);
-    setShowCalendar(false);
-  };
+  useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
 
-  const getCurrentWeek = () => {
-    return {
-      startDate: "Jan 25",
-      endDate: "Jan 31",
-      themes: [
-        { name: "Work Stress", count: 8, trend: "increasing" },
-        { name: "Self-Worth", count: 5, trend: "stable" },
-        { name: "Relationships", count: 3, trend: "decreasing" },
-      ],
+    const loadWikiData = async () => {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/wiki/all?userId=${userId}`,
+        );
+        const data = await res.json();
+
+        setDomains(data.domains || []);
+        setEntries(data.entries || []);
+      } catch (error) {
+        console.error("Wiki fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    loadWikiData();
+  }, [userId]);
+
+  // Filter entries for the selected domain tag
+  const activeEntries = useMemo(() => {
+    if (!activeTag) return [];
+
+    return entries.filter((entry) => {
+      const entryTags = entry.tags || [];
+      return entryTags.some((t) => t.toLowerCase() === activeTag.toLowerCase());
+    });
+  }, [activeTag, entries]);
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
-  const weekData = selectedWeek || getCurrentWeek();
+  // Handle back navigation
+  const handleBack = () => {
+    if (activeTag) {
+      setActiveTag(null);
+    } else {
+      router.back();
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          bgcolor: "#f5f5dc",
+        }}
+      >
+        <CircularProgress sx={{ color: "#8b7355" }} />
+      </Box>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+          bgcolor: "#f5f5dc",
+        }}
+      >
+        <Typography sx={{ color: "#666", fontFamily: "'Georgia', serif" }}>
+          Please provide a userId parameter
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
       sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
         minHeight: "100vh",
-        background: "linear-gradient(to bottom, #f5f5dc, #e8dcc0)",
-        perspective: "1500px",
         position: "relative",
-        p: 3,
+        overflow: "hidden",
       }}
     >
-      <BreathingAnimation duration={8} intensity={0.6} />
-
-      {/* Back Button */}
-      <IconButton
-        onClick={() => router.push(`/gallery?userId=${userId}`)}
+      <Box
         sx={{
           position: "fixed",
-          top: 30,
-          left: 30,
-          zIndex: 100,
-          width: 50,
-          height: 50,
-          backgroundColor: "#8b7355",
-          color: "#fff",
-          "&:hover": { backgroundColor: "#6b5335" },
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: -1,
+          bgcolor: "#f5f5dc",
         }}
       >
-        <ArrowBackIcon />
-      </IconButton>
+        <BreathingAnimation duration={8} intensity={0.4} />
+      </Box>
 
-      {/* Calendar Icon */}
-      <Tooltip title="View Calendar">
-        <IconButton
-          onClick={() => setShowCalendar(!showCalendar)}
-          sx={{
-            position: "fixed",
-            top: 30,
-            right: 30,
-            zIndex: 100,
-            width: 50,
-            height: 50,
-            backgroundColor: "#8b7355",
-            color: "#fff",
-            "&:hover": { backgroundColor: "#6b5335" },
-          }}
-        >
-          <CalendarTodayIcon />
-        </IconButton>
-      </Tooltip>
+      <IconButton
+        onClick={handleBack}
+        sx={{
+          position: "fixed",
+          top: { xs: 20, md: 40 },
+          left: { xs: 20, md: 40 },
+          zIndex: 100,
+          width: 56,
+          height: 56,
+          bgcolor: "#a08060",
+          color: "#fff",
+          boxShadow: "0 4px 20px rgba(160, 128, 96, 0.3)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            bgcolor: "#8b7355",
+            transform: "scale(1.05)",
+            boxShadow: "0 6px 25px rgba(160, 128, 96, 0.4)",
+          },
+        }}
+      >
+        <ArrowBack />
+      </IconButton>
 
       {/* Main Content */}
       <Box
         sx={{
-          ...bookStyles.page,
-          width: "100%",
-          maxWidth: "900px",
-          minHeight: "85vh",
-          p: 5,
-          zIndex: 10,
+          position: "relative",
+          zIndex: 1,
+          p: { xs: 2, md: 6 },
+          pt: { xs: 10, md: 12 },
+          display: "flex",
+          justifyContent: "center",
         }}
       >
-        <Box sx={bookStyles.margin} />
-        <Box sx={bookStyles.shadow} />
-
-        <Box sx={{ position: "relative", zIndex: 1 }}>
-          <Typography
-            variant="h4"
+        <Paper
+          elevation={0}
+          sx={{
+            width: "100%",
+            maxWidth: "800px",
+            minHeight: "80vh",
+            p: { xs: 4, md: 8 },
+            bgcolor: "rgba(255, 254, 252, 0.85)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(232, 228, 217, 0.6)",
+            borderRadius: "24px",
+            position: "relative",
+            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.04)",
+          }}
+        >
+          <Box
             sx={{
-              fontFamily: "'Courier New', monospace",
-              fontWeight: 600,
-              color: "#4a4a4a",
-              mb: 1,
-              textAlign: "left",
-              ml: 2,
+              position: "absolute",
+              left: { xs: "20px", md: "40px" },
+              top: "40px",
+              bottom: "40px",
+              width: "2px",
+              bgcolor: "rgba(160, 128, 96, 0.15)",
+              borderRadius: "1px",
             }}
-          >
-            📚 Personal Wiki
-          </Typography>
+          />
 
-          <Typography
-            sx={{
-              fontFamily: "'Courier New', monospace",
-              fontSize: "0.9rem",
-              color: "#8b7355",
-              mb: 4,
-              ml: 2,
-            }}
-          >
-            Week of {weekData.startDate} - {weekData.endDate}
-          </Typography>
-
-          {/* Theme Cards */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {weekData.themes.map((theme, i) => (
-              <Box
-                key={i}
+          <Box sx={{ position: "relative", zIndex: 1, pl: { xs: 4, md: 6 } }}>
+            {/* Header */}
+            <Box sx={{ mb: 6 }}>
+              <Typography
+                variant="overline"
                 sx={{
-                  p: 3,
-                  borderRadius: "12px",
-                  border: "2px solid #d4c5a9",
-                  background: "#fff",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateX(10px)",
-                    boxShadow: "0 4px 15px rgba(139,115,85,0.2)",
-                  },
+                  color: "#a08060",
+                  letterSpacing: "3px",
+                  fontSize: "0.7rem",
+                  fontWeight: 500,
                 }}
               >
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2,
-                  }}
-                >
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontFamily: "'Courier New', monospace",
-                      fontWeight: 600,
-                      color: "#8b7355",
-                    }}
-                  >
-                    {theme.name}
-                  </Typography>
-                  <Chip
-                    label={`${theme.count} entries`}
-                    size="small"
-                    sx={{
-                      fontFamily: "'Courier New', monospace",
-                      backgroundColor: "#8b7355",
-                      color: "#fff",
-                    }}
-                  />
-                </Box>
+                {activeTag ? "Domain Details" : "(Personal Wiki)"}
+              </Typography>
 
+              <Typography
+                variant="h4"
+                sx={{
+                  fontFamily: "'Georgia', serif",
+                  fontWeight: 400,
+                  color: "#3a3a3a",
+                  mt: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                {activeTag ? (
+                  <>
+                    <Box
+                      component="span"
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        bgcolor: "#a08060",
+                        display: "inline-block",
+                      }}
+                    />
+                    {activeTag.charAt(0).toUpperCase() + activeTag.slice(1)}
+                  </>
+                ) : (
+                  "Journal Index"
+                )}
+              </Typography>
+
+              {activeTag && (
                 <Typography
                   sx={{
-                    fontFamily: "'Courier New', monospace",
-                    fontSize: "0.9rem",
-                    color: "#6a6a6a",
+                    color: "#888",
+                    fontSize: "0.95rem",
+                    mt: 1,
+                    fontFamily: "'Georgia', serif",
+                    fontStyle: "italic",
                   }}
                 >
-                  Trend:{" "}
-                  {theme.trend === "increasing"
-                    ? "📈 Increasing"
-                    : theme.trend === "decreasing"
-                      ? "📉 Decreasing"
-                      : "➡️ Stable"}
+                  {activeEntries.length}{" "}
+                  {activeEntries.length === 1 ? "entry" : "entries"} found
                 </Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      </Box>
+              )}
+            </Box>
 
-      {/* Calendar Popup */}
-      {showCalendar && (
-        <ThursdayCalendar
-          userId={userId}
-          onClose={() => setShowCalendar(false)}
-          onWeekSelect={handleWeekSelect}
-        />
-      )}
+            {!activeTag ? (
+              /* --- DOMAIN INDEX VIEW --- */
+              <Fade in timeout={800}>
+                <Box>
+                  {domains.length === 0 ? (
+                    <Box
+                      sx={{
+                        textAlign: "center",
+                        py: 8,
+                        color: "#888",
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          fontFamily: "'Georgia', serif",
+                          fontStyle: "italic",
+                        }}
+                      >
+                        No life domains found in your journal entries yet.
+                      </Typography>
+                      <Typography
+                        sx={{ fontSize: "0.85rem", mt: 1, color: "#aaa" }}
+                      >
+                        Start journaling to see patterns emerge.
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                      {domains.map(({ name, count }, index) => (
+                        <Fade in timeout={400 + index * 100} key={name}>
+                          <Chip
+                            label={
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                <span>#{name}</span>
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    bgcolor: "rgba(160, 128, 96, 0.15)",
+                                    color: "#8b7355",
+                                    px: 1,
+                                    py: 0.25,
+                                    borderRadius: "10px",
+                                    fontSize: "0.75rem",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {count}
+                                </Box>
+                              </Box>
+                            }
+                            onClick={() => setActiveTag(name)}
+                            sx={{
+                              cursor: "pointer",
+                              fontFamily: "'SF Mono', 'Courier New', monospace",
+                              fontSize: "0.9rem",
+                              bgcolor: "rgba(255, 255, 255, 0.7)",
+                              border: "1px solid rgba(212, 197, 169, 0.5)",
+                              borderRadius: "12px",
+                              py: 2.5,
+                              px: 1,
+                              transition: "all 0.3s ease",
+                              "&:hover": {
+                                bgcolor: "rgba(160, 128, 96, 0.08)",
+                                borderColor: "#a08060",
+                                transform: "translateY(-2px)",
+                                boxShadow:
+                                  "0 4px 12px rgba(160, 128, 96, 0.15)",
+                              },
+                            }}
+                          />
+                        </Fade>
+                      ))}
+                    </Box>
+                  )}
+                </Box>
+              </Fade>
+            ) : (
+              /* --- DOMAIN DETAIL VIEW (Summaries) --- */
+              <Fade in timeout={600}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {activeEntries.length === 0 ? (
+                    <Typography sx={{ color: "#888", fontStyle: "italic" }}>
+                      No entries found for #{activeTag}
+                    </Typography>
+                  ) : (
+                    activeEntries.map((entry, idx) => (
+                      <Fade in timeout={300 + idx * 150} key={idx}>
+                        <Box
+                          sx={{
+                            p: 3,
+                            bgcolor: "rgba(255, 255, 255, 0.6)",
+                            borderRadius: "16px",
+                            border: "1px solid rgba(232, 228, 217, 0.5)",
+                            transition: "all 0.3s ease",
+                            "&:hover": {
+                              bgcolor: "rgba(255, 255, 255, 0.9)",
+                              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.04)",
+                            },
+                          }}
+                        >
+                          {/* Date */}
+                          <Typography
+                            sx={{
+                              fontFamily: "'SF Mono', 'Courier New', monospace",
+                              fontSize: "0.75rem",
+                              color: "#a08060",
+                              mb: 2,
+                              letterSpacing: "0.5px",
+                            }}
+                          >
+                            {formatDate(entry.created_at)}
+                          </Typography>
+
+                          {/* Summary */}
+                          <Typography
+                            sx={{
+                              fontFamily: "'Georgia', serif",
+                              fontSize: "1.1rem",
+                              lineHeight: 1.9,
+                              color: "#444",
+                              mb: 2.5,
+                            }}
+                          >
+                            {entry.summary}
+                          </Typography>
+
+                          {/* Tags */}
+                          <Box
+                            sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}
+                          >
+                            {(entry.tags || []).map((t) => (
+                              <Typography
+                                key={t}
+                                sx={{
+                                  fontSize: "0.75rem",
+                                  color:
+                                    t.toLowerCase() === activeTag
+                                      ? "#a08060"
+                                      : "#bbb",
+                                  fontWeight:
+                                    t.toLowerCase() === activeTag ? 600 : 400,
+                                  fontFamily:
+                                    "'SF Mono', 'Courier New', monospace",
+                                  bgcolor:
+                                    t.toLowerCase() === activeTag
+                                      ? "rgba(160, 128, 96, 0.1)"
+                                      : "transparent",
+                                  px: t.toLowerCase() === activeTag ? 1 : 0,
+                                  py: 0.25,
+                                  borderRadius: "6px",
+                                }}
+                              >
+                                #{t}
+                              </Typography>
+                            ))}
+                          </Box>
+                        </Box>
+                      </Fade>
+                    ))
+                  )}
+                </Box>
+              </Fade>
+            )}
+          </Box>
+        </Paper>
+      </Box>
     </Box>
   );
 }

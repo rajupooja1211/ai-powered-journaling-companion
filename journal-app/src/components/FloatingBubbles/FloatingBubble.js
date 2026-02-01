@@ -1,37 +1,30 @@
 "use client";
 import { motion } from "framer-motion";
 
-// Vibrant, richer colors
 const COLORS = [
-  "#4299e1", // deep blue
-  "#ed8936", // vibrant orange
-  "#48bb78", // rich green
-  "#f56565", // coral red
-  "#ecc94b", // golden yellow
-  "#805ad5", // royal purple
-  "#38b2ac", // teal
-  "#e53e3e", // bright red
+  "#4299e1",
+  "#ed8936",
+  "#48bb78",
+  "#f56565",
+  "#ecc94b",
+  "#38b2ac",
+  "#e53e3e",
 ];
 
-// Helper for randomness
 const randomBetween = (min, max) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
 export default function FloatingBubble({ text, onClick, isFrozen }) {
-  const size = randomBetween(80, 180); // Circle size
+  const size = randomBetween(80, 180);
   const duration = randomBetween(12, 20); // Float duration
   const delay = randomBetween(0, 8); // Random delay in seconds
-  const left = randomBetween(5, 90); // Random horizontal position
+  const left = randomBetween(5, 90);
   const color = COLORS[randomBetween(0, COLORS.length - 1)];
 
   return (
     <motion.div
       initial={{ y: `100vh`, opacity: 0 }}
-      animate={
-        isFrozen
-          ? {} // Don't animate if frozen
-          : { y: `-120vh`, opacity: 1 }
-      }
+      animate={isFrozen ? {} : { y: `-120vh`, opacity: 1 }}
       transition={{
         duration,
         delay,

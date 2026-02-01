@@ -1,4 +1,3 @@
-// config/predefinedTags.js
 export const PREDEFINED_TAGS = {
   // Core Emotions
   EMOTIONS: [
