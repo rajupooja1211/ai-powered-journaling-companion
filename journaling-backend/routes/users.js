@@ -32,8 +32,8 @@ router.post("/", async (req, res) => {
 
     // Create new user
     const result = await pool.query(
-      `INSERT INTO users (email, full_name, timezone) 
-       VALUES ($1, $2, $3) 
+      `INSERT INTO users (user_id, email, full_name, timezone)
+       VALUES (gen_random_uuid(), $1, $2, $3)
        RETURNING user_id, email, full_name, created_at`,
       [email, full_name, "UTC"],
     );
