@@ -1,0 +1,64 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: journal-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-journaluser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-journalpass}
+      POSTGRES_DB: ${POSTGRES_DB:-journaldb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+    networks:
+      - journal-network
+
+  backend:
+    build:
+      context: ./journaling-backend
+      dockerfile: Dockerfile
+    container_name: journal-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-journaluser}:${POSTGRES_PASSWORD:-journalpass}@postgres:5432/${POSTGRES_DB:-journaldb}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    ports:
+      - "3001:3001"
+    networks:
+      - journal-network
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./journal-app
+      dockerfile: Dockerfile
+    container_name: journal-frontend
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./journal-app:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - journal-network
+
+networks:
+  journal-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
