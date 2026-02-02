@@ -2,6 +2,7 @@
 
 An AI-assisted journaling application that helps users reflect on their thoughts, emotions, and patterns over time.
 The app supports voice/text journaling, AI-generated insights, and domain-based visualizations (Work, Family, Health, etc.).
+link to demo : https://drive.google.com/file/d/1EU64NL0OW1tShcd6LlfQD0DflvueMd7Q/view?usp=sharing
 
 # IMPORTANT
 This project is designed to run locally using Docker, with secure environment variable handling and a production-aware architecture.
